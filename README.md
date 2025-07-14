@@ -10,6 +10,7 @@ This Project needs [HassBeam Connect Backend](https://github.com/BasilBerg/hassb
 - Simplifies the setup process of a HassBeam universal remote
 - Capture IR codes from remote controls
 - Save IR codes with custom device and action names 
+<img width="2291" height="446" alt="grafik" src="https://github.com/user-attachments/assets/463d33d0-42cf-4143-a081-7ce4b9963ea7" />
 
 
 ### Manager Card
@@ -20,6 +21,7 @@ This Project needs [HassBeam Connect Backend](https://github.com/BasilBerg/hassb
 - Delete stored IR codes
 - Real-time data updates
 
+<img width="2278" height="853" alt="grafik" src="https://github.com/user-attachments/assets/2976ff1d-1882-4b36-9d74-94520a59415d" />
 
 
 ## Installation
