@@ -1,7 +1,7 @@
 # HassBeam Connect Cards
 
 Custom Lovelace cards for setting up and managing HassBeam in Home Assistant.
-This Project needs [HassBeam Connect Backend](https://github.com/BasilBerg/hassbeam_connect_backend) to fully work.
+This Project needs [HassBeam Connect Backend](https://github.com/BasilBerg/hassbeam-connect-backend) to fully work.
 
 ## Features
 
@@ -26,48 +26,95 @@ This Project needs [HassBeam Connect Backend](https://github.com/BasilBerg/hassb
 
 ## Installation
 
-### HACS Installation (recommended)
+HassBeam Connect comes in two separate repos that contain the backend and frontend of the integration. You can install both manually but it is recommended to install them via [HACS](https://www.hacs.xyz/docs/use/download/download/)
 
-It is recommended to install this dashboard with [HACS](https://www.hacs.xyz/docs/use/):
+- open HACS and click on the settings in the top right corner
+- select custom repository
+- add these two repositories:
+  - Backend: `https://github.com/BasilBerg/hassbeam-connect-backend` Type: Integration 
+  - Lovelace Cards: `https://github.com/BasilBerg/hassbeam-connect-cards` Type: Dashboard
+- Search `HassBeam` in HACS and install `HassBeam Connect Backend` and `HassBeam Connect Cards`
+- Go to Devices & Services and add the `HassBeam Connect Backend``Integration
+- You can now add the `hassbeam-setup-card` and `hassbeam-manager-card` on any lovelace dashboard
 
-#### Add this repository to HACS
 
-- Open HACS in Home Assistant
-- Open the menu in the top-right corner
-- Click 'Custom Repositories'
-- Enter the URL of this repository `https://github.com/BasilBerg/hassbeam_connect_cards`
-- Select type: `Dashboard` and add the repository
 
-### Manual Installation
+### Compatibility
+#### HassBeam
+HassBeam Connect will work out of the box with your HassBeam devices, there is no additional configuration required. You can find more information [here](https://github.com/BasilBerg/hassbeam/blob/main/setup.md) 
 
-1. Download `hassbeam-card.js`, `hassbeam-manager-card.js`, and `hassbeam-setup-card.js`
-2. Place them in your `www` folder
-3. Add the resource to your Lovelace configuration:
-
-   ```yaml
-   resources:
-     - url: /local/hassbeam-card.js
-       type: module
-   ```
-
-## Configuration
-Add the cards to a Lovelace Dashboard **using the UI** or the following YAML codes:
-
-#### Setup Card Configuration
-
+#### Other ESPHome devices
+To use HassBEam Connect with other ESPHome devices, you have to modify the configuration of your device to include this:
 ```yaml
-type: custom:hassbeam-setup-card
+# Transmitter Configuration
+remote_transmitter:
+  pin: GPIO27 #replace with your transmitter pin
+  carrier_duty_percent: 50%
+
+# Api Configuration
+api:
+  services:
+    #service for sending pronto codes
+    - service: send_ir_pronto
+      variables:
+        data: string
+      then:
+        - remote_transmitter.transmit_pronto:
+            data: !lambda "return data.c_str();"
+        - script.execute:
+            id: update_protocol_sent
+            protocol: "Pronto"
+
+# Receiver Configuration
+remote_receiver:
+  pin:
+    number: GPIO14 #replace with your receiver pin
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  dump: all
+  idle: 25ms
+  buffer_size: 2kb
+
+  # Event Configuration
+  on_pronto:
+    #fire event when pronto code is received
+    - homeassistant.event:
+        event: esphome.hassbeam.ir_received
+        data:
+          hassbeam_device: ${device_name_sub}
+          protocol: "Pronto"
+          data: !lambda "return x.data.c_str();"
+
 ```
 
-#### Manager Card Configuration
-
-```yaml
-type: custom:hassbeam-manager-card
-```
+## Using HassBeam Connect
 
 
-## Use saved IR codes
-You can use the saved IR codes on your dashboard or inside scripts, automations etc. using the `hassbeam_connect_backend.send_ir_code` service. You can do this in the UI or like this:
+### Capturing commands
+To capture IR commands you can use the `hassbeam-setup-card`.
+- click Start Listening
+- press the Button of the original remote
+- the captured command(s) should now appear in the list
+  - you can filter the list by protocol or leave this field empty to display all protocols
+  - pronto is selected by default since it is not protocol specific and should work for all common devices
+- Pick the command you want to save
+  - if you're not sure which one will work, you can click send to replay the command and check if the device reacts as expected
+  - click select on the command you want to save
+- enter the name of the device this command controls
+- enter the name of the action this command performs
+- click Save IR Code
+
+
+### Managing stored commands
+To manage stored IR commands you can use the `hassbeam-manager-card`. This card can display a list of all commands you have saved. you can filter them by target device or action and you can replay the command from within this list. You can also delete commands.
+
+
+### Sending IR Commands
+You can use the saved IR codes on your dashboard or inside scripts, automations etc. using the `hassbeam_connect_backend.send_ir_code` service.  
+This can either be done in the UI or in YAML:
+
 ```yaml
 action: hassbeam_connect_backend.send_ir_code
 data:
@@ -75,14 +122,8 @@ data:
   action: power #Action name you specified during setup
 ```
 
-## Requirements
-
-- Home Assistant with Lovelace UI
-- HassBeam Connect Backend integration
-- HassBeam device
-
 ## Links
 
 - [HassBeam](https://github.com/BasilBerg/hassbeam)
-- [HassBeam Connect Backend](https://github.com/BasilBerg/hassbeam_connect_backend)
-- [Issues](https://github.com/BasilBerg/hassbeam_connect_cards/issues)
+- [HassBeam Connect Backend](https://github.com/BasilBerg/hassbeam-connect-backend)
+- [Issues](https://github.com/BasilBerg/hassbeam-connect-cards/issues)
